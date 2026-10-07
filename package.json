@@ -1,0 +1,24 @@
+{
+  "name": "broccoli-log",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "broccoli.log — a retro top-down self-introduction game",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "banner": "tsx scripts/banner.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.3",
+    "vitest": "^5.0.3"
+  }
+}
