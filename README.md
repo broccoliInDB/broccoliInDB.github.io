@@ -24,6 +24,5 @@ Vite + TypeScript + Canvas 2D, no game engine. Dialogue lives in
 
 ## Credits
 
-- Tiles: [Tiny Town](https://kenney.nl/assets/tiny-town) by Kenney — CC0
 - Font: [Galmuri](https://github.com/quiple/galmuri) by quiple — SIL OFL 1.1
 - broccoli sprite: hand-drawn for this project

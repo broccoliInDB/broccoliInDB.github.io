@@ -42,7 +42,7 @@ export function computeCamera(
 
 function drawTile(
   ctx: CanvasRenderingContext2D,
-  tileset: HTMLImageElement,
+  tileset: CanvasImageSource,
   tile: number,
   screenX: number,
   screenY: number
@@ -67,7 +67,7 @@ function drawTile(
 
 function drawLayer(
   ctx: CanvasRenderingContext2D,
-  tileset: HTMLImageElement,
+  tileset: CanvasImageSource,
   world: World,
   layer: number[],
   camera: Camera
@@ -124,7 +124,7 @@ function drawPlayer(
 }
 
 export interface RenderAssets {
-  tileset: HTMLImageElement
+  tileset: CanvasImageSource
   sprites: SpriteSheet
 }
 
