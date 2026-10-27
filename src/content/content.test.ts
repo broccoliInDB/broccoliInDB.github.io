@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { FRAMES, PALETTE, SPRITE_SIZE } from '../sprites/broccoli'
 import { computeViewSize } from '../ui/viewport'
 import { BUILDINGS } from '../world/layout'
+import { CINEMA } from './cinema'
 import { en } from './en'
 import { ko } from './ko'
+import { RESUME } from './resume'
 
 describe('content', () => {
   it('has the same entries in Korean and English', () => {
@@ -53,10 +55,11 @@ describe('content', () => {
   })
 
   // Employers the owner chose to name (홈쇼핑모아, 이지케어텍) are allowed;
-  // the operating company and hospital clients stay unnamed.
+  // the operating company and hospital clients stay unnamed. Covers every
+  // public surface — the game content, the resume, and the scroll cinema.
   it('does not name unapproved companies or clients', () => {
-    const banned = ['버즈니', 'Buzzni', 'Aurora', '서울대']
-    const text = JSON.stringify([ko, en])
+    const banned = ['버즈니', 'Buzzni', 'Aurora', '서울대', 'SNUH', 'Bundang']
+    const text = JSON.stringify([ko, en, RESUME, CINEMA])
     banned.forEach((word) => expect(text).not.toContain(word))
   })
 })

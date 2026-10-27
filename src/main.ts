@@ -11,22 +11,14 @@ import { renderDetail, type DetailPanel } from './ui/detail'
 import { Dialog } from './ui/dialog'
 import { renderRoadmap } from './ui/roadmap'
 import { Shell } from './ui/shell'
-import { renderTldr } from './ui/tldr'
+import { renderCinema, type CinemaCallbacks } from './ui/cinema'
+import { renderResume } from './ui/resume'
 import { bindTouchControls } from './ui/touch'
+import { createTileset } from './world/codeworld-tiles'
 import { findNextLandmark, ROUTE } from './world/landmarks'
 
 const MAX_DELTA_SECONDS = 0.05
-const TLDR_HASH = '#tldr'
 const MAP_HASH = '#map'
-
-function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const image = new Image()
-    image.onload = (): void => resolve(image)
-    image.onerror = (): void => reject(new Error(`Failed to load ${src}`))
-    image.src = src
-  })
-}
 
 function clearHash(): void {
   if (window.location.hash !== '') {
@@ -99,16 +91,37 @@ async function main(): Promise<void> {
     }
   }
 
+  // The career page (#resume) is the "30초 요약" surface and the default
+  // landing; walking into the game is a step in from it.
   const closeTldr = (): void => {
     isTldrOpen = false
-    shell.tldrRoot.hidden = true
+    shell.resumeRoot.hidden = true
     clearHash()
     flushInput()
   }
+  const walkFromResume = (): void => {
+    closeTldr()
+    startGame(true)
+  }
   const openTldr = (): void => {
     isTldrOpen = true
-    renderTldr(shell.tldrRoot, closeTldr)
-    shell.tldrRoot.hidden = false
+    renderResume(shell.resumeRoot, walkFromResume)
+    shell.resumeRoot.hidden = false
+    shell.resumeRoot.scrollTop = 0
+  }
+
+  // The scroll cinema is the landing: an accessible narrative. From it you can
+  // step into the game (onWalk) or the detailed resume (onResume).
+  const cinemaCbs: CinemaCallbacks = {
+    onWalk: (): void => {
+      shell.cinemaRoot.hidden = true
+      startGame(true)
+    },
+    onResume: (): void => openTldr(),
+  }
+  const openCinema = (): void => {
+    renderCinema(shell.cinemaRoot, cinemaCbs)
+    shell.cinemaRoot.hidden = false
   }
 
   const closeMap = (): void => {
@@ -155,10 +168,13 @@ async function main(): Promise<void> {
     }
     coach.render()
     if (isTldrOpen) {
-      renderTldr(shell.tldrRoot, closeTldr)
+      renderResume(shell.resumeRoot, walkFromResume)
     }
     if (isMapOpen) {
       renderMap()
+    }
+    if (!shell.cinemaRoot.hidden) {
+      renderCinema(shell.cinemaRoot, cinemaCbs)
     }
   })
 
@@ -210,17 +226,15 @@ async function main(): Promise<void> {
     }
   })
 
-  if (window.location.hash === TLDR_HASH) {
-    openTldr()
-  }
-  if (window.location.hash === MAP_HASH) {
-    openMap()
-  }
+  // Career page is the landing; the old title screen is retired.
+  shell.titleRoot.hidden = true
+  let bootedToGame = false
 
   if (import.meta.env.DEV) {
     const params = new URLSearchParams(window.location.search)
     if (params.has('start')) {
       startGame(!params.has('noguide'))
+      bootedToGame = true
     }
     const x = Number(params.get('x'))
     const y = Number(params.get('y'))
@@ -234,11 +248,17 @@ async function main(): Promise<void> {
     }
   }
 
-  const [tileset] = await Promise.all([
-    loadImage('/tiles.png'),
-    document.fonts.load(`${LABEL_FONT_SIZE}px Galmuri9`),
-  ])
-  const assets = { tileset, sprites: createSpriteSheet() }
+  if (window.location.hash === MAP_HASH) {
+    openMap()
+  } else if (!bootedToGame) {
+    openCinema()
+    if (window.location.hash === '#tldr') {
+      openTldr()
+    }
+  }
+
+  await document.fonts.load(`${LABEL_FONT_SIZE}px Galmuri9`)
+  const assets = { tileset: createTileset(), sprites: createSpriteSheet() }
   const ctx = shell.canvas.getContext('2d')
   if (ctx === null) {
     return
