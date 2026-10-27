@@ -18,6 +18,7 @@ function readStoredLang(): Lang | null {
 }
 
 function detectLang(): Lang {
+  if (typeof navigator === 'undefined') return 'ko'
   return navigator.language.toLowerCase().startsWith('ko') ? 'ko' : 'en'
 }
 
