@@ -131,11 +131,6 @@ const ko: ResumeData = {
       stack: ['react', 'swr', 'emotion', 'nocodb'],
     },
     {
-      ref: 'c0ffee0',
-      date: '2020~2021',
-      msg: '웹 개발을 바닥부터 재학습 · 모바일 커머스로 전환',
-    },
-    {
       ref: '4d1ea9b',
       date: '2018.06',
       msg: '기술팀 — 공통 모듈·온보딩 체계를 주도',

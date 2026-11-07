@@ -1732,6 +1732,32 @@ button {
   font-size: 17px;
   color: var(--cink);
 }
+#cinema .cine-scene .items {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 3px 0 0;
+  display: grid;
+  gap: 7px;
+  max-width: 46ch;
+}
+#cinema .cine-scene .items li {
+  position: relative;
+  padding-left: 16px;
+  font-family: var(--cmono);
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--cink-soft);
+}
+#cinema .cine-scene .items li::before {
+  content: '–';
+  position: absolute;
+  left: 0;
+  color: var(--camber);
+}
+#cinema .cine-scene .items li strong {
+  color: var(--cink);
+  font-weight: 600;
+}
 
 #cinema .cine-gate {
   margin-top: 8px;

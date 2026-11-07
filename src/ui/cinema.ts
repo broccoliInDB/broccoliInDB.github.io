@@ -86,12 +86,19 @@ function buildScene(scene: Scene): HTMLElement {
   if (scene.gate === true) {
     sec.appendChild(buildGate(getCinema()))
   }
+  if (scene.items !== undefined) {
+    const ul = createElement('ul', undefined, 'items')
+    scene.items.forEach((item) => ul.appendChild(rich('li', '', item)))
+    sec.appendChild(ul)
+  }
   if (scene.result !== undefined) {
     const r = createElement('span', undefined, 'result')
     if (scene.resultNum !== undefined) {
       r.appendChild(createElement('span', scene.resultNum, 'n'))
+      r.appendChild(document.createTextNode(` ${scene.result}`))
+    } else {
+      r.appendChild(document.createTextNode(scene.result))
     }
-    r.appendChild(document.createTextNode(` ${scene.result}`))
     sec.appendChild(r)
   }
   return sec
