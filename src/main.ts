@@ -99,13 +99,9 @@ async function main(): Promise<void> {
     clearHash()
     flushInput()
   }
-  const walkFromResume = (): void => {
-    closeTldr()
-    startGame(true)
-  }
   const openTldr = (): void => {
     isTldrOpen = true
-    renderResume(shell.resumeRoot, walkFromResume)
+    renderResume(shell.resumeRoot, closeTldr)
     shell.resumeRoot.hidden = false
     shell.resumeRoot.scrollTop = 0
   }
@@ -168,7 +164,7 @@ async function main(): Promise<void> {
     }
     coach.render()
     if (isTldrOpen) {
-      renderResume(shell.resumeRoot, walkFromResume)
+      renderResume(shell.resumeRoot, closeTldr)
     }
     if (isMapOpen) {
       renderMap()

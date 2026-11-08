@@ -54,11 +54,11 @@ describe('content', () => {
     })
   })
 
-  // Employers the owner chose to name (홈쇼핑모아, 이지케어텍) are allowed;
-  // the operating company and hospital clients stay unnamed. Covers every
-  // public surface — the game content, the resume, and the scroll cinema.
+  // Employers the owner chose to name (버즈니/Buzzni, 홈쇼핑모아, 이지케어텍)
+  // are allowed; hospital clients stay unnamed. Covers every public surface —
+  // the game content, the resume, and the scroll cinema.
   it('does not name unapproved companies or clients', () => {
-    const banned = ['버즈니', 'Buzzni', 'Aurora', '서울대', 'SNUH', 'Bundang']
+    const banned = ['Aurora', '서울대', 'SNUH', 'Bundang']
     const text = JSON.stringify([ko, en, RESUME, CINEMA])
     banned.forEach((word) => expect(text).not.toContain(word))
   })

@@ -1,5 +1,9 @@
 import { getLang, setLang } from '../content'
-import { getResume, type ResumeData } from '../content/resume'
+import {
+  getResume,
+  type AxStructureBlock,
+  type ResumeData,
+} from '../content/resume'
 import { createElement } from './dom'
 
 // The career landing: one IDE/terminal "session" that reads top to bottom.
@@ -36,7 +40,7 @@ function highlighted(parent: HTMLElement, parts: string[], hlClass: string): voi
   parent.appendChild(document.createTextNode(parts[2] ?? ''))
 }
 
-function renderHero(body: HTMLElement, d: ResumeData, onWalk: () => void): void {
+function renderHero(body: HTMLElement, d: ResumeData): void {
   body.appendChild(promptLine(d.whoamiCmd))
   const who = createElement('div', undefined, 'out whoami')
   const line1 = createElement('div')
@@ -58,18 +62,38 @@ function renderHero(body: HTMLElement, d: ResumeData, onWalk: () => void): void 
   const sub = createElement('p', undefined, 'sub-line')
   highlighted(sub, d.thesisSub, 'str')
   out.appendChild(sub)
-  const links = createElement('div', undefined, 'linkrow')
-  const walk = createElement('button', d.walk, 'prime')
-  walk.setAttribute('type', 'button')
-  walk.addEventListener('click', onWalk)
-  links.appendChild(walk)
-  d.links.forEach((l) => links.appendChild(anchor(l.label, l.href, '')))
-  out.appendChild(links)
   body.appendChild(out)
 }
 
-function renderCareer(body: HTMLElement, d: ResumeData): void {
-  body.appendChild(promptLine(d.careerCmd, d.careerNote))
+function renderStack(body: HTMLElement, d: ResumeData): void {
+  body.appendChild(promptLine(d.stackCmd, d.stackNote))
+  const out = createElement('div', undefined, 'out stack-block')
+
+  const tier = (
+    label: string,
+    items: string[],
+    className: string
+  ): HTMLElement => {
+    const row = createElement('div', undefined, `stack-tier ${className}`)
+    row.appendChild(createElement('span', label, 'tl'))
+    const chips = createElement('div', undefined, 'stack-chips')
+    items.forEach((t) => chips.appendChild(createElement('span', t, 'chip')))
+    row.appendChild(chips)
+    return row
+  }
+
+  out.appendChild(tier(d.stackPrimary.label, d.stackPrimary.items, 'lead'))
+  out.appendChild(tier(d.stackAi.label, d.stackAi.items, 'lead'))
+  out.appendChild(createElement('div', undefined, 'stack-div'))
+  d.stackRest.forEach((t) => out.appendChild(tier(t.label, t.items, 'muted')))
+
+  body.appendChild(out)
+}
+
+function renderCareer(body: HTMLElement, d: ResumeData, root: HTMLElement): void {
+  const head = promptLine(d.careerCmd, d.careerNote)
+  head.id = 'rs-career'
+  body.appendChild(head)
   const out = createElement('div', undefined, 'out gitlog')
   d.career.forEach((row) => {
     const rowEl = createElement('div', undefined, 'row')
@@ -82,12 +106,39 @@ function renderCareer(body: HTMLElement, d: ResumeData): void {
     line.appendChild(
       createElement('span', row.msg, row.details === undefined ? 'dim' : 'msg')
     )
+    if (row.company !== undefined) {
+      line.appendChild(createElement('span', row.company, 'co'))
+    }
     rowEl.appendChild(line)
     if (row.details !== undefined) {
       const detail = createElement('div', undefined, 'detail')
       row.details.forEach((t) => detail.appendChild(createElement('div', t, 'c')))
       if (row.stack !== undefined) {
         detail.appendChild(createElement('div', row.stack.join(' · '), 'stack'))
+      }
+      if (row.axDetail === true) {
+        const btn = createElement('button', d.axDetailLabel, 'ax-detail-btn')
+        btn.setAttribute('type', 'button')
+        btn.addEventListener('click', () =>
+          openDetailModal(root, d.axStructureTitle, d.axStructure)
+        )
+        detail.appendChild(btn)
+      }
+      if (row.adDetail === true) {
+        const btn = createElement('button', d.adDetailLabel, 'ax-detail-btn')
+        btn.setAttribute('type', 'button')
+        btn.addEventListener('click', () =>
+          openDetailModal(root, d.adStructureTitle, d.adStructure)
+        )
+        detail.appendChild(btn)
+      }
+      if (row.missionDetail === true) {
+        const btn = createElement('button', d.missionDetailLabel, 'ax-detail-btn')
+        btn.setAttribute('type', 'button')
+        btn.addEventListener('click', () =>
+          openDetailModal(root, d.missionStructureTitle, d.missionStructure)
+        )
+        detail.appendChild(btn)
       }
       rowEl.appendChild(detail)
     }
@@ -130,7 +181,9 @@ function renderPrinciples(body: HTMLElement, d: ResumeData): void {
 }
 
 function renderAx(body: HTMLElement, d: ResumeData): void {
-  body.appendChild(promptLine(d.axCmd, d.axNote))
+  const axHead = promptLine(d.axCmd, d.axNote)
+  axHead.id = 'rs-ax'
+  body.appendChild(axHead)
   const out = createElement('div', undefined, 'out')
 
   const head = createElement('p', undefined, 'thesis-head')
@@ -215,25 +268,134 @@ function renderContact(body: HTMLElement, d: ResumeData): void {
   end.appendChild(createElement('span', undefined, 'cursor'))
   body.appendChild(end)
 
-  body.appendChild(createElement('p', d.foot, 'foot'))
+  if (d.foot) body.appendChild(createElement('p', d.foot, 'foot'))
+}
+
+// A detail modal — reused by the AX structure and the ad-capture case study.
+function openDetailModal(
+  root: HTMLElement,
+  title: string,
+  blocks: AxStructureBlock[]
+): void {
+  const ko = getLang() === 'ko'
+  const overlay = createElement('div', undefined, 'ax-modal-overlay')
+  const panel = createElement('div', undefined, 'ax-modal')
+
+  const head = createElement('div', undefined, 'ax-modal-head')
+  head.appendChild(createElement('h3', title, 'ax-modal-title'))
+  const close = createElement('button', '×', 'ax-modal-close')
+  close.setAttribute('type', 'button')
+  close.setAttribute('aria-label', ko ? '닫기' : 'Close')
+  head.appendChild(close)
+  panel.appendChild(head)
+
+  const list = createElement('div', undefined, 'ax-modal-list')
+  blocks.forEach((blk) => {
+    const item = createElement('div', undefined, 'ax-blk')
+    const top = createElement('div', undefined, 'ax-blk-top')
+    top.appendChild(createElement('span', blk.n, 'ax-blk-n'))
+    top.appendChild(createElement('span', blk.title, 'ax-blk-title'))
+    item.appendChild(top)
+    if (blk.body !== undefined) {
+      item.appendChild(createElement('p', blk.body, 'ax-blk-body'))
+    }
+    if (blk.list !== undefined) {
+      const ul = createElement('ul', undefined, 'ax-blk-list')
+      blk.list.forEach((t) => ul.appendChild(createElement('li', t)))
+      item.appendChild(ul)
+    }
+    if (blk.chips !== undefined) {
+      const chipRow = createElement('div', undefined, 'ax-blk-chips')
+      blk.chips.forEach((t) => chipRow.appendChild(createElement('span', t, 'ax-chip')))
+      item.appendChild(chipRow)
+    }
+    if (blk.diagram !== undefined) {
+      item.appendChild(createElement('pre', blk.diagram, 'ax-blk-diagram'))
+    }
+    list.appendChild(item)
+  })
+  panel.appendChild(list)
+  overlay.appendChild(panel)
+
+  const onKey = (e: KeyboardEvent): void => {
+    if (e.key === 'Escape') {
+      e.stopPropagation()
+      dismiss()
+    }
+  }
+  function dismiss(): void {
+    overlay.remove()
+    document.removeEventListener('keydown', onKey, true)
+  }
+  close.addEventListener('click', dismiss)
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) dismiss()
+  })
+  document.addEventListener('keydown', onKey, true)
+
+  root.appendChild(overlay)
+  close.focus()
+}
+
+// A clickable traffic-light dot wired to a real window action.
+function dot(variant: string, label: string, onClick: () => void): HTMLElement {
+  const b = createElement('button', undefined, `dot ${variant}`)
+  b.setAttribute('type', 'button')
+  b.setAttribute('aria-label', label)
+  b.title = label
+  b.addEventListener('click', onClick)
+  return b
+}
+
+// A clickable tab that smooth-scrolls a section into view.
+function tab(label: string, targetId: string): HTMLElement {
+  const t = createElement('span', label, 'tab link')
+  t.setAttribute('role', 'button')
+  t.setAttribute('tabindex', '0')
+  t.title = label
+  const go = (): void =>
+    document
+      .getElementById(targetId)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  t.addEventListener('click', go)
+  t.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      go()
+    }
+  })
+  return t
 }
 
 // Render the whole career page into `root` (the #resume overlay).
-export function renderResume(root: HTMLElement, onWalk: () => void): void {
+export function renderResume(
+  root: HTMLElement,
+  onClose: () => void
+): void {
   const d = getResume()
   const win = createElement('div', undefined, 'win')
 
   const bar = createElement('div', undefined, 'titlebar')
-  for (let i = 0; i < 3; i++) bar.appendChild(createElement('span', undefined, 'dot'))
+  const ko = getLang() === 'ko'
+  bar.appendChild(dot('close', ko ? '닫기 (홈으로)' : 'Close (back to home)', onClose))
+  bar.appendChild(
+    dot('contact', ko ? '맨 아래(연락처)로' : 'Jump to contact', () =>
+      root.scrollTo({ top: root.scrollHeight, behavior: 'smooth' })
+    )
+  )
+  bar.appendChild(
+    dot('top', ko ? '맨 위로' : 'Scroll to top', () =>
+      root.scrollTo({ top: 0, behavior: 'smooth' })
+    )
+  )
   const tabs = createElement('div', undefined, 'tabs')
   tabs.appendChild(createElement('span', 'broccoli — zsh', 'tab active'))
-  tabs.appendChild(createElement('span', 'career.log', 'tab'))
-  tabs.appendChild(createElement('span', 'ax-gate.ts', 'tab'))
+  tabs.appendChild(tab('career.log', 'rs-career'))
+  tabs.appendChild(tab('ax-gate.ts', 'rs-ax'))
   bar.appendChild(tabs)
   const branch = createElement('span', undefined, 'branch')
   branch.appendChild(document.createTextNode('⎇ '))
   branch.appendChild(createElement('b', 'main'))
-  branch.appendChild(document.createTextNode(' · 홈쇼핑모아'))
   bar.appendChild(branch)
   const lang = createElement('button', getLang() === 'ko' ? 'EN' : '한', 'lang-toggle')
   lang.setAttribute('type', 'button')
@@ -246,8 +408,9 @@ export function renderResume(root: HTMLElement, onWalk: () => void): void {
   win.appendChild(bar)
 
   const body = createElement('div', undefined, 'body')
-  renderHero(body, d, onWalk)
-  renderCareer(body, d)
+  renderHero(body, d)
+  renderStack(body, d)
+  renderCareer(body, d, root)
   renderImpact(body, d)
   renderPrinciples(body, d)
   renderAx(body, d)
