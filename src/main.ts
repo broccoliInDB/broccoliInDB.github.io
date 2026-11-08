@@ -93,18 +93,28 @@ async function main(): Promise<void> {
 
   // The career page (#resume) is the "30초 요약" surface and the default
   // landing; walking into the game is a step in from it.
-  const closeTldr = (): void => {
+  const hideTldr = (): void => {
     isTldrOpen = false
     shell.resumeRoot.hidden = true
     clearHash()
     flushInput()
+  }
+  // User-initiated close goes back in history so the browser Back button and
+  // the in-page close/▲ button stay in sync; popstate does the actual hide.
+  const closeTldr = (): void => {
+    if (isTldrOpen) history.back()
+    else hideTldr()
   }
   const openTldr = (): void => {
     isTldrOpen = true
     renderResume(shell.resumeRoot, closeTldr)
     shell.resumeRoot.hidden = false
     shell.resumeRoot.scrollTop = 0
+    history.pushState({ view: 'tldr' }, '')
   }
+  window.addEventListener('popstate', () => {
+    if (isTldrOpen) hideTldr()
+  })
 
   // The scroll cinema is the landing: an accessible narrative. From it you can
   // step into the game (onWalk) or the detailed resume (onResume).

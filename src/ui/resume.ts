@@ -416,6 +416,14 @@ export function renderResume(
   renderAx(body, d)
   renderCraft(body, d)
   renderContact(body, d)
+  const back = createElement(
+    'button',
+    getLang() === 'ko' ? '▲ 메인으로' : '▲ Back to home',
+    'back-main'
+  )
+  back.setAttribute('type', 'button')
+  back.addEventListener('click', onClose)
+  body.appendChild(back)
   win.appendChild(body)
 
   root.replaceChildren(win)
