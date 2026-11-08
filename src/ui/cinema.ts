@@ -86,12 +86,19 @@ function buildScene(scene: Scene): HTMLElement {
   if (scene.gate === true) {
     sec.appendChild(buildGate(getCinema()))
   }
+  if (scene.items !== undefined) {
+    const ul = createElement('ul', undefined, 'items')
+    scene.items.forEach((item) => ul.appendChild(rich('li', '', item)))
+    sec.appendChild(ul)
+  }
   if (scene.result !== undefined) {
     const r = createElement('span', undefined, 'result')
     if (scene.resultNum !== undefined) {
       r.appendChild(createElement('span', scene.resultNum, 'n'))
+      r.appendChild(document.createTextNode(` ${scene.result}`))
+    } else {
+      r.appendChild(document.createTextNode(scene.result))
     }
-    r.appendChild(document.createTextNode(` ${scene.result}`))
     sec.appendChild(r)
   }
   return sec
@@ -144,13 +151,13 @@ export function renderCinema(root: HTMLElement, cbs: CinemaCallbacks): void {
   close.appendChild(rich('h2', '', d.closeHeading))
   close.appendChild(createElement('p', d.closeBody))
   const links = createElement('div', undefined, 'cine-links')
-  const walk = createElement('button', d.ctaWalk, 'prime')
+  const walk = createElement('button', d.ctaWalk, '')
   walk.setAttribute('type', 'button')
   walk.addEventListener('click', cbs.onWalk)
-  const resume = createElement('button', d.ctaResume, '')
+  const resume = createElement('button', d.ctaResume, 'prime')
   resume.setAttribute('type', 'button')
   resume.addEventListener('click', cbs.onResume)
-  links.append(walk, resume, anchor(d.ctaContact, 'mailto:broccoliindb@gmail.com', ''))
+  links.append(resume, walk, anchor(d.ctaContact, 'mailto:broccoliindb@gmail.com', ''))
   close.appendChild(links)
   main.appendChild(close)
 
