@@ -28,6 +28,7 @@ export class Shell {
   readonly titleRoot = getElement<HTMLElement>('title')
   readonly resumeRoot = getElement<HTMLElement>('resume')
   readonly cinemaRoot = getElement<HTMLElement>('cinema')
+  readonly careerwalkRoot = getElement<HTMLElement>('careerwalk')
   readonly detailRoot = getElement<HTMLElement>('detail')
   readonly startButton = getElement<HTMLButtonElement>('start-btn')
   readonly langButton = getElement<HTMLButtonElement>('lang-btn')
