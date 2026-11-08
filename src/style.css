@@ -1529,6 +1529,22 @@ button {
 #resume .ax-detail-btn:hover {
   filter: brightness(1.2);
 }
+#resume .back-main {
+  display: block;
+  width: 100%;
+  margin: 32px 0 8px;
+  padding: 13px;
+  background: var(--rsurface2);
+  color: var(--rink);
+  border: 1px solid var(--redge);
+  border-radius: 8px;
+  font-family: var(--rmono);
+  font-size: 13px;
+}
+#resume .back-main:hover {
+  border-color: var(--ramber);
+  color: var(--ramber);
+}
 /* AX structure modal — scoped under #resume so it inherits the résumé's
    prose font + --r* palette and reads as the same design language. */
 #resume .ax-modal-overlay {

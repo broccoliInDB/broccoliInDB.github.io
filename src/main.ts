@@ -19,12 +19,8 @@ import { findNextLandmark, ROUTE } from './world/landmarks'
 
 const MAX_DELTA_SECONDS = 0.05
 const MAP_HASH = '#map'
-
-function clearHash(): void {
-  if (window.location.hash !== '') {
-    history.replaceState(null, '', window.location.pathname)
-  }
-}
+const TLDR_HASH = '#resume'
+const GAME_HASH = '#game'
 
 async function main(): Promise<void> {
   const shell = new Shell()
@@ -76,7 +72,12 @@ async function main(): Promise<void> {
   let isMapOpen = false
 
   const isPaused = (): boolean =>
-    !isStarted || isTldrOpen || isMapOpen || isDetailOpen || coach.isOpen()
+    !isStarted ||
+    isTldrOpen ||
+    isMapOpen ||
+    isDetailOpen ||
+    coach.isOpen() ||
+    !shell.cinemaRoot.hidden
 
   const startGame = (shouldGuide: boolean): void => {
     if (isStarted) {
@@ -91,70 +92,102 @@ async function main(): Promise<void> {
     }
   }
 
-  // The career page (#resume) is the "30초 요약" surface and the default
-  // landing; walking into the game is a step in from it.
+  // Hash router. applyRoute() is the single place that shows/hides views: it
+  // reconciles the DOM to location.hash and never touches history. Forward
+  // navigation pushes a hash via go(); closing/back uses history.back(), whose
+  // popstate re-runs applyRoute() to reveal the previous view.
+  //   cinema → no hash   resume → #resume   game → #game   map → #map
   const closeTldr = (): void => {
-    isTldrOpen = false
-    shell.resumeRoot.hidden = true
-    clearHash()
-    flushInput()
-  }
-  const openTldr = (): void => {
-    isTldrOpen = true
-    renderResume(shell.resumeRoot, closeTldr)
-    shell.resumeRoot.hidden = false
-    shell.resumeRoot.scrollTop = 0
+    if (isTldrOpen) history.back()
   }
 
-  // The scroll cinema is the landing: an accessible narrative. From it you can
-  // step into the game (onWalk) or the detailed resume (onResume).
+  const renderMap = (): void => {
+    renderRoadmap(shell.mapRoot, {
+      visited: game.getVisited(),
+      onTravel: travelTo,
+      onClose: () => history.back(),
+      onOpenTldr: () => go(TLDR_HASH),
+      onReplayGuide: () => {
+        go(GAME_HASH)
+        coach.start(flushInput)
+      },
+    })
+  }
+
+  // The scroll cinema is the landing narrative; from it you step into the game
+  // (onWalk) or the detailed resume (onResume).
   const cinemaCbs: CinemaCallbacks = {
-    onWalk: (): void => {
-      shell.cinemaRoot.hidden = true
-      startGame(true)
-    },
-    onResume: (): void => openTldr(),
+    onWalk: (): void => go(GAME_HASH),
+    onResume: (): void => go(TLDR_HASH),
   }
   const openCinema = (): void => {
     renderCinema(shell.cinemaRoot, cinemaCbs)
     shell.cinemaRoot.hidden = false
   }
 
-  const closeMap = (): void => {
-    isMapOpen = false
-    shell.mapRoot.hidden = true
-    clearHash()
+  const showResume = (): void => {
+    isTldrOpen = true
+    renderResume(shell.resumeRoot, closeTldr)
+    shell.resumeRoot.hidden = false
+    shell.resumeRoot.scrollTop = 0
+  }
+  const hideResume = (): void => {
+    if (!isTldrOpen) return
+    isTldrOpen = false
+    shell.resumeRoot.hidden = true
     flushInput()
   }
-  const travelTo = (entry: EntryId): void => {
-    closeMap()
-    startGame(false)
-    game.travelTo(entry)
-  }
-  const renderMap = (): void => {
-    renderRoadmap(shell.mapRoot, {
-      visited: game.getVisited(),
-      onTravel: travelTo,
-      onClose: closeMap,
-      onOpenTldr: () => {
-        closeMap()
-        openTldr()
-      },
-      onReplayGuide: () => {
-        closeMap()
-        startGame(false)
-        coach.start(flushInput)
-      },
-    })
-  }
-  const openMap = (): void => {
+  const showMap = (): void => {
     coach.finish()
     isMapOpen = true
     renderMap()
     shell.mapRoot.hidden = false
     shell.mapRoot.scrollTop = 0
   }
-  const toggleMap = (): void => (isMapOpen ? closeMap() : openMap())
+  const hideMap = (): void => {
+    if (!isMapOpen) return
+    isMapOpen = false
+    shell.mapRoot.hidden = true
+    flushInput()
+  }
+
+  const applyRoute = (): void => {
+    switch (window.location.hash) {
+      case TLDR_HASH:
+        hideMap()
+        if (!isTldrOpen) showResume()
+        break
+      case MAP_HASH:
+        hideResume()
+        if (!isMapOpen) showMap()
+        break
+      case GAME_HASH:
+        hideResume()
+        hideMap()
+        shell.cinemaRoot.hidden = true
+        if (!isStarted) startGame(true)
+        break
+      default:
+        // Cinema (empty/unknown hash) is the landing. Returning from the game
+        // re-shows the overlay; startGame's own guard keeps the game running.
+        hideResume()
+        hideMap()
+        openCinema()
+    }
+  }
+  const go = (hash: string): void => {
+    history.pushState(null, '', hash === '' ? window.location.pathname : hash)
+    applyRoute()
+  }
+  const toggleMap = (): void => {
+    if (isMapOpen) history.back()
+    else go(MAP_HASH)
+  }
+  const travelTo = (entry: EntryId): void => {
+    go(GAME_HASH)
+    game.travelTo(entry)
+  }
+  window.addEventListener('popstate', applyRoute)
 
   onLangChange(() => {
     shell.applyText()
@@ -174,8 +207,8 @@ async function main(): Promise<void> {
     }
   })
 
-  shell.startButton.addEventListener('click', () => startGame(true))
-  shell.titleMapButton.addEventListener('click', openMap)
+  shell.startButton.addEventListener('click', () => go(GAME_HASH))
+  shell.titleMapButton.addEventListener('click', toggleMap)
   shell.titleRoot
     .querySelectorAll<HTMLButtonElement>('[data-lang]')
     .forEach((button) => {
@@ -187,9 +220,9 @@ async function main(): Promise<void> {
     setLang(getLang() === 'ko' ? 'en' : 'ko')
   })
   shell.mapButton.addEventListener('click', toggleMap)
-  shell.questButton.addEventListener('click', openMap)
+  shell.questButton.addEventListener('click', toggleMap)
   shell.tldrButton.addEventListener('click', () =>
-    isTldrOpen ? closeTldr() : openTldr()
+    isTldrOpen ? history.back() : go(TLDR_HASH)
   )
 
   window.addEventListener('keydown', (event) => {
@@ -203,7 +236,8 @@ async function main(): Promise<void> {
       return
     }
     if (event.code === 'Escape' && (isTldrOpen || isMapOpen)) {
-      return isTldrOpen ? closeTldr() : closeMap()
+      history.back()
+      return
     }
     if (coach.isOpen()) {
       if (event.code === 'Escape') {
@@ -218,7 +252,7 @@ async function main(): Promise<void> {
       return
     }
     if (!isStarted && !isTldrOpen && !isMapOpen && isConfirmKey) {
-      startGame(true)
+      go(GAME_HASH)
     }
   })
 
@@ -244,14 +278,13 @@ async function main(): Promise<void> {
     }
   }
 
-  if (window.location.hash === MAP_HASH) {
-    openMap()
-  } else if (!bootedToGame) {
-    openCinema()
-    if (window.location.hash === '#tldr') {
-      openTldr()
-    }
+  // A DEV ?start boot already entered the game; reflect it in the URL so Back
+  // returns to the landing. Otherwise applyRoute() reconciles to the loaded
+  // hash (#resume/#game/#map), defaulting to cinema.
+  if (bootedToGame) {
+    history.replaceState(null, '', GAME_HASH)
   }
+  applyRoute()
 
   await document.fonts.load(`${LABEL_FONT_SIZE}px Galmuri9`)
   const assets = { tileset: createTileset(), sprites: createSpriteSheet() }
