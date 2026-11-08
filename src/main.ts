@@ -13,6 +13,7 @@ import { renderRoadmap } from './ui/roadmap'
 import { Shell } from './ui/shell'
 import { renderCinema, type CinemaCallbacks } from './ui/cinema'
 import { renderResume } from './ui/resume'
+import { CareerWalk } from './careerwalk/careerwalk'
 import { bindTouchControls } from './ui/touch'
 import { createTileset } from './world/codeworld-tiles'
 import { findNextLandmark, ROUTE } from './world/landmarks'
@@ -61,6 +62,10 @@ async function main(): Promise<void> {
     quest: shell.questButton,
     map: shell.mapButton,
   })
+  // The career-walk decision game. Esc / ✕ steps back to the previous view.
+  const careerwalk = new CareerWalk((): void => {
+    history.back()
+  })
 
   input.attachKeyboard(window)
   bindTouchControls(shell.touchRoot, input)
@@ -70,12 +75,14 @@ async function main(): Promise<void> {
   let isStarted = false
   let isTldrOpen = false
   let isMapOpen = false
+  let isGameOpen = false
 
   const isPaused = (): boolean =>
     !isStarted ||
     isTldrOpen ||
     isMapOpen ||
     isDetailOpen ||
+    isGameOpen ||
     coach.isOpen() ||
     !shell.cinemaRoot.hidden
 
@@ -150,14 +157,31 @@ async function main(): Promise<void> {
     shell.mapRoot.hidden = true
     flushInput()
   }
+  // The career-walk game mounts into its own full-screen root and owns its
+  // input; it tears down on exit so re-entry restarts fresh.
+  const openGame = (): void => {
+    if (isGameOpen) return
+    isGameOpen = true
+    shell.careerwalkRoot.hidden = false
+    careerwalk.start(shell.careerwalkRoot)
+  }
+  const closeGame = (): void => {
+    if (!isGameOpen) return
+    isGameOpen = false
+    careerwalk.stop()
+    shell.careerwalkRoot.hidden = true
+    flushInput()
+  }
 
   const applyRoute = (): void => {
     switch (window.location.hash) {
       case TLDR_HASH:
+        closeGame()
         hideMap()
         if (!isTldrOpen) showResume()
         break
       case MAP_HASH:
+        closeGame()
         hideResume()
         if (!isMapOpen) showMap()
         break
@@ -165,11 +189,12 @@ async function main(): Promise<void> {
         hideResume()
         hideMap()
         shell.cinemaRoot.hidden = true
-        if (!isStarted) startGame(true)
+        openGame()
         break
       default:
-        // Cinema (empty/unknown hash) is the landing. Returning from the game
-        // re-shows the overlay; startGame's own guard keeps the game running.
+        // Cinema (empty/unknown hash) is the landing; leaving the game returns
+        // here and tears the game down.
+        closeGame()
         hideResume()
         hideMap()
         openCinema()
@@ -226,6 +251,10 @@ async function main(): Promise<void> {
   )
 
   window.addEventListener('keydown', (event) => {
+    // The career-walk game owns all keys while open (its own window listener).
+    if (isGameOpen) {
+      return
+    }
     const isConfirmKey = event.code === 'Enter' || event.code === 'Space'
     if (isDetailOpen) {
       if (event.code === 'Escape') {
