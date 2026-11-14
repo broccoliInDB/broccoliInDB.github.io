@@ -22,6 +22,14 @@ const MAX_DELTA_SECONDS = 0.05
 const MAP_HASH = '#map'
 const TLDR_HASH = '#resume'
 const GAME_HASH = '#game'
+// The current game (fail-closed) is a standalone page shipped from public/.
+// #game hands off to it with location.replace() so the #game entry never stays
+// in history: Back from the game returns to the view before it, and a deep
+// link to /#game lands straight on the game.
+// Vite's dev server only serves public/ files by exact path, hence index.html.
+const GAME_PAGE = `${import.meta.env.BASE_URL}fail-closed/${
+  import.meta.env.DEV ? 'index.html' : ''
+}`
 
 async function main(): Promise<void> {
   const shell = new Shell()
@@ -186,10 +194,10 @@ async function main(): Promise<void> {
         if (!isMapOpen) showMap()
         break
       case GAME_HASH:
-        hideResume()
-        hideMap()
-        shell.cinemaRoot.hidden = true
-        openGame()
+        // Hand off to the standalone game page. The career-walk overlay
+        // (openGame) is detached from this route and kept for DEV only.
+        closeGame()
+        window.location.replace(GAME_PAGE)
         break
       default:
         // Cinema (empty/unknown hash) is the landing; leaving the game returns
@@ -280,7 +288,15 @@ async function main(): Promise<void> {
       toggleMap()
       return
     }
-    if (!isStarted && !isTldrOpen && !isMapOpen && isConfirmKey) {
+    // Only the retired title screen starts the game on Enter/Space; on the
+    // cinema landing those keys belong to its focused buttons.
+    if (
+      !isStarted &&
+      !isTldrOpen &&
+      !isMapOpen &&
+      shell.cinemaRoot.hidden &&
+      isConfirmKey
+    ) {
       go(GAME_HASH)
     }
   })
@@ -300,6 +316,11 @@ async function main(): Promise<void> {
     if (params.has('x') && params.has('y')) {
       const facing = params.get('f') === 'up' ? 'up' : 'down'
       game.placeAt(x, y, facing)
+    }
+    // ?careerwalk opens the (detached) career-walk overlay for local checks.
+    if (params.has('careerwalk')) {
+      shell.cinemaRoot.hidden = true
+      openGame()
     }
     const entry = params.get('entry')
     if (entry !== null) {
