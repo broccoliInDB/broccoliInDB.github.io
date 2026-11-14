@@ -116,7 +116,7 @@ const ko: ResumeData = {
     "'못 하게'",
     " 만들어 '되게' 만드는 것도 그 일부예요.",
   ],
-  walk: '▶ broccoli.log — 걸어서 보기',
+  walk: '▶ fail-closed — 신노선 막아보기 (게임)',
   links: [
     { label: 'GitHub', href: 'https://github.com/broccoliInDB' },
     { label: '블로그', href: 'https://velog.io/@broccoliindb/' },
@@ -387,7 +387,7 @@ const ko: ResumeData = {
     {
       name: 'broccoli.log',
       badge: '이 페이지',
-      desc: '커밋 로그를 거꾸로 걷는 레트로 탑다운 자기소개 게임. 엔진 없이 Canvas 2D.',
+      desc: '레일 위 불량 열차를 장치로 막는 디펜스 게임. 엔진 없이 Canvas 2D.',
       stack: 'vite · typescript · canvas',
     },
     {
@@ -428,7 +428,7 @@ const en: ResumeData = {
     "'unable'",
     " to go wrong is part of making things work.",
   ],
-  walk: '▶ broccoli.log — take a walk',
+  walk: '▶ fail-closed — guard the new line (game)',
   links: [
     { label: 'GitHub', href: 'https://github.com/broccoliInDB' },
     { label: 'Blog', href: 'https://velog.io/@broccoliindb/' },
@@ -699,7 +699,7 @@ const en: ResumeData = {
     {
       name: 'broccoli.log',
       badge: 'this page',
-      desc: 'A retro top-down intro game that walks the commit log backwards. No engine, Canvas 2D.',
+      desc: 'A defense game: stop faulty trains on the rails with guard devices. No engine, Canvas 2D.',
       stack: 'vite · typescript · canvas',
     },
     {
